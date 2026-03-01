@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ItemCard } from '../components/ItemCard';
 import { Item } from '../types';
 import { Search, SlidersHorizontal } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Marketplace: React.FC = () => {
   const { data: items, isLoading } = useQuery<Item[]>({
@@ -35,6 +36,18 @@ export const Marketplace: React.FC = () => {
           <SlidersHorizontal className="w-4 h-4" />
           Filters
         </button>
+      </div>
+
+      <div className="flex flex-wrap gap-3 mb-12">
+        {['Electronics', 'Fashion', 'Home', 'Collectibles', 'Other'].map(cat => (
+          <Link
+            key={cat}
+            to={`/category/${cat}`}
+            className="px-6 py-2 bg-white border border-zinc-200 rounded-full text-sm font-bold text-zinc-600 hover:border-brand hover:text-brand transition-all shadow-sm"
+          >
+            {cat}
+          </Link>
+        ))}
       </div>
 
       {isLoading ? (

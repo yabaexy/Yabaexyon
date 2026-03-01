@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ethers } from 'ethers';
 import { Item, EscrowStatus } from '../types';
 import { WYDA_TOKEN_ADDRESS, ESCROW_CONTRACT_ADDRESS, WYDA_ABI, ESCROW_ABI } from '../constants';
-import { Shield, ArrowLeft, User, Clock, CheckCircle2 } from 'lucide-react';
+import { Shield, ArrowLeft, User, Clock, CheckCircle2, Info, Share2, Heart, MessageSquare, ArrowRight } from 'lucide-react';
+import { ItemCard } from '../components/ItemCard';
 
 interface ItemDetailsProps {
   account: string | null;
@@ -19,6 +20,14 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ account, provider }) =
   const { data: item, isLoading } = useQuery<Item>({
     queryKey: ['item', id],
     queryFn: () => fetch(`/api/items/${id}`).then(res => res.json()),
+  });
+
+  const { data: similarItems } = useQuery<Item[]>({
+    queryKey: ['similar-items', item?.category],
+    queryFn: () => fetch('/api/items').then(res => res.json()).then((items: Item[]) => 
+      items.filter(i => i.category === item?.category && i.onChainId !== item?.onChainId).slice(0, 4)
+    ),
+    enabled: !!item,
   });
 
   const handleBuy = async () => {
@@ -57,89 +66,168 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ account, provider }) =
   if (!item) return <div className="max-w-7xl mx-auto p-8">Item not found</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <button 
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 mb-8 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Marketplace
-      </button>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        <div className="space-y-6">
-          <div className="aspect-square rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200">
-            <img
-              src={item.imageUrl}
-              alt={item.title}
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
+    <div className="min-h-screen bg-zinc-50 pb-20">
+      {/* Hero Section with Glassmorphism */}
+      <div className="relative h-[50vh] overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center blur-3xl opacity-20 scale-110"
+          style={{ backgroundImage: `url(${item.imageUrl})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-50" />
+        
+        <div className="relative max-w-7xl mx-auto px-4 h-full flex flex-col justify-end pb-12">
+          <button 
+            onClick={() => navigate(-1)}
+            className="absolute top-8 left-4 flex items-center gap-2 text-zinc-600 hover:text-zinc-900 transition-colors bg-white/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="px-3 py-1 bg-brand text-white text-[10px] font-bold rounded-full uppercase tracking-widest">
+                  {item.category}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-mono bg-white/50 backdrop-blur px-2 py-1 rounded-md border border-white/20">
+                  ID: #{item.onChainId}
+                </span>
+              </div>
+              <h1 className="text-5xl md:text-6xl font-black text-zinc-900 tracking-tight leading-none">
+                {item.title}
+              </h1>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button className="p-3 bg-white border border-zinc-200 rounded-2xl hover:bg-zinc-50 transition-all shadow-sm">
+                <Heart className="w-5 h-5 text-zinc-400" />
+              </button>
+              <button className="p-3 bg-white border border-zinc-200 rounded-2xl hover:bg-zinc-50 transition-all shadow-sm">
+                <Share2 className="w-5 h-5 text-zinc-400" />
+              </button>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col">
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="px-3 py-1 bg-brand/10 text-brand text-xs font-bold rounded-full uppercase tracking-wider">
-                {item.category}
-              </span>
-              <span className="text-xs text-zinc-400 font-mono">ID: #{item.onChainId}</span>
+      <div className="max-w-7xl mx-auto px-4 -mt-8 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-12">
+            <div className="glass-card rounded-[2.5rem] overflow-hidden border-zinc-200/50 shadow-2xl shadow-zinc-200/50">
+              <img
+                src={item.imageUrl}
+                alt={item.title}
+                className="w-full aspect-[4/3] object-cover"
+                referrerPolicy="no-referrer"
+              />
             </div>
-            <h1 className="text-4xl font-bold text-zinc-900 mb-4">{item.title}</h1>
-            <div className="flex items-center gap-4 text-zinc-500 text-sm">
-              <div className="flex items-center gap-1">
-                <User className="w-4 h-4" />
-                <span className="font-mono">{item.sellerAddress.slice(0, 6)}...{item.sellerAddress.slice(-4)}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                <span>Listed {new Date(item.createdAt).toLocaleDateString()}</span>
-              </div>
-            </div>
-          </div>
 
-          <div className="glass-card rounded-2xl p-6 mb-8">
-            <div className="text-sm text-zinc-500 mb-1">Price</div>
-            <div className="text-3xl font-bold text-zinc-900 flex items-baseline gap-2">
-              {item.price} <span className="text-lg text-brand">WYDA</span>
-            </div>
-          </div>
-
-          <div className="prose prose-zinc mb-8">
-            <h3 className="text-lg font-semibold mb-2">Description</h3>
-            <p className="text-zinc-600 leading-relaxed whitespace-pre-wrap">
-              {item.description}
-            </p>
-          </div>
-
-          <div className="mt-auto space-y-4">
-            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex gap-4">
-              <Shield className="text-emerald-500 w-6 h-6 shrink-0" />
-              <div>
-                <h4 className="text-sm font-bold text-emerald-900">Buyer Protection Enabled</h4>
-                <p className="text-xs text-emerald-700 mt-1">
-                  Your funds are held securely in the smart contract until you confirm you've received the item.
+            <div className="space-y-8">
+              <section>
+                <h3 className="text-sm font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Description</h3>
+                <p className="text-xl text-zinc-600 leading-relaxed font-light">
+                  {item.description}
                 </p>
+              </section>
+
+              <div className="h-px bg-zinc-200" />
+
+              <section className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Link 
+                    to={`/seller/${item.sellerAddress}`}
+                    className="w-16 h-16 rounded-2xl bg-zinc-100 border border-zinc-200 overflow-hidden group"
+                  >
+                    <img 
+                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.sellerAddress}`} 
+                      className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      referrerPolicy="no-referrer"
+                    />
+                  </Link>
+                  <div>
+                    <h4 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-1">Seller</h4>
+                    <Link 
+                      to={`/seller/${item.sellerAddress}`}
+                      className="text-lg font-bold text-zinc-900 hover:text-brand transition-colors flex items-center gap-2"
+                    >
+                      {item.sellerAddress.slice(0, 6)}...{item.sellerAddress.slice(-4)}
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+                <button className="flex items-center gap-2 px-6 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-2xl font-bold transition-all">
+                  <MessageSquare className="w-4 h-4" />
+                  Contact
+                </button>
+              </section>
+            </div>
+          </div>
+
+          {/* Sidebar Actions */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24 space-y-6">
+              <div className="glass-card rounded-[2rem] p-8 border-zinc-200/50 shadow-xl">
+                <div className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Current Price</div>
+                <div className="text-5xl font-black text-zinc-900 mb-8 flex items-baseline gap-2">
+                  {item.price} <span className="text-xl text-brand">WYDA</span>
+                </div>
+
+                <div className="space-y-4">
+                  <button
+                    onClick={handleBuy}
+                    disabled={buying || account === item.sellerAddress}
+                    className="w-full py-5 bg-zinc-900 hover:bg-black disabled:bg-zinc-200 disabled:cursor-not-allowed text-white font-black text-lg rounded-2xl shadow-2xl shadow-zinc-900/20 transition-all flex items-center justify-center gap-3 group"
+                  >
+                    {buying ? (
+                      <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                        {account === item.sellerAddress ? "Your Listing" : "Buy Now"}
+                      </>
+                    )}
+                  </button>
+
+                  <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4 flex gap-4">
+                    <Shield className="text-emerald-500 w-6 h-6 shrink-0" />
+                    <div>
+                      <h4 className="text-[10px] font-black text-emerald-900 uppercase tracking-widest">Escrow Protected</h4>
+                      <p className="text-[10px] text-emerald-700 mt-1 leading-relaxed">
+                        Funds are held in the smart contract until you confirm delivery.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-card rounded-[2rem] p-6 border-zinc-200/50">
+                <div className="flex items-center gap-3 text-zinc-500">
+                  <Clock className="w-5 h-5" />
+                  <span className="text-sm font-medium">Listed {new Date(item.createdAt).toLocaleDateString()}</span>
+                </div>
               </div>
             </div>
-
-            <button
-              onClick={handleBuy}
-              disabled={buying || account === item.sellerAddress}
-              className="w-full py-4 bg-zinc-900 hover:bg-black disabled:bg-zinc-200 disabled:cursor-not-allowed text-white font-bold rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2"
-            >
-              {buying ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <CheckCircle2 className="w-5 h-5" />
-                  {account === item.sellerAddress ? "You are the seller" : "Buy with Escrow"}
-                </>
-              )}
-            </button>
           </div>
         </div>
+
+        {/* Similar Items Section */}
+        {similarItems && similarItems.length > 0 && (
+          <section className="mt-32">
+            <div className="flex items-center justify-between mb-12">
+              <h2 className="text-3xl font-black text-zinc-900 tracking-tight">Similar Treasures</h2>
+              <Link to="/" className="text-sm font-bold text-brand hover:underline flex items-center gap-1">
+                View All <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {similarItems.map(similar => (
+                <ItemCard key={similar.id} item={similar} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

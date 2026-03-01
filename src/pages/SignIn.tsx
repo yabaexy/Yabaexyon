@@ -1,0 +1,88 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useWallet } from '../hooks/useWallet';
+import { motion } from 'motion/react';
+import { LogIn, Wallet, ArrowRight } from 'lucide-react';
+
+export const SignIn: React.FC = () => {
+  const { account, connect, error } = useWallet();
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    if (account) {
+      checkUser();
+    }
+  }, [account]);
+
+  const checkUser = async () => {
+    setChecking(true);
+    try {
+      const res = await fetch(`/api/users/${account}`);
+      if (res.ok) {
+        navigate('/dashboard');
+      } else {
+        navigate('/signup');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto px-4 py-20">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card rounded-3xl p-8 text-center"
+      >
+        <div className="w-16 h-16 bg-brand/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <LogIn className="text-brand w-8 h-8" />
+        </div>
+        <h1 className="text-2xl font-bold text-zinc-900 mb-2">Welcome Back</h1>
+        <p className="text-zinc-500 mb-8 text-sm">
+          Connect your wallet to access your account and manage your trades.
+        </p>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 text-xs p-3 rounded-xl mb-6 border border-red-100">
+            {error}
+          </div>
+        )}
+
+        {!account ? (
+          <button
+            onClick={connect}
+            className="w-full py-4 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl shadow-lg shadow-brand/20 transition-all flex items-center justify-center gap-2"
+          >
+            <Wallet className="w-5 h-5" />
+            Connect Wallet
+          </button>
+        ) : (
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2 px-4 py-2 bg-zinc-100 rounded-full border border-zinc-200">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+              <span className="text-xs font-mono text-zinc-600">
+                {account.slice(0, 6)}...{account.slice(-4)}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-400">
+              {checking ? "Checking profile..." : "Wallet connected"}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-8 pt-8 border-t border-zinc-100">
+          <p className="text-xs text-zinc-500">
+            New to WYDA?{' '}
+            <Link to="/signup" className="text-brand font-bold hover:underline">
+              Create a profile
+            </Link>
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  );
+};

@@ -24,6 +24,16 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    address TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    bio TEXT,
+    avatarUrl TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -50,6 +60,35 @@ async function startServer() {
     const item = db.prepare("SELECT * FROM items WHERE onChainId = ?").get(req.params.id);
     if (!item) return res.status(404).json({ error: "Item not found" });
     res.json(item);
+  });
+
+  // User Routes
+  app.get("/api/users/:address", (req, res) => {
+    const user = db.prepare("SELECT * FROM users WHERE address = ?").get(req.params.address);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json(user);
+  });
+
+  app.post("/api/users", (req, res) => {
+    const { address, username, bio, avatarUrl } = req.body;
+    try {
+      db.prepare(`
+        INSERT INTO users (address, username, bio, avatarUrl)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(address) DO UPDATE SET
+          username = excluded.username,
+          bio = excluded.bio,
+          avatarUrl = excluded.avatarUrl
+      `).run(address, username, bio, avatarUrl);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/users/:address/items", (req, res) => {
+    const items = db.prepare("SELECT * FROM items WHERE sellerAddress = ? ORDER BY createdAt DESC").all(req.params.address);
+    res.json(items);
   });
 
   // Vite middleware for development

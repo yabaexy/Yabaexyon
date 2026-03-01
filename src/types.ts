@@ -10,6 +10,14 @@ export interface Item {
   createdAt: string;
 }
 
+export interface User {
+  address: string;
+  username: string;
+  bio: string;
+  avatarUrl: string;
+  createdAt: string;
+}
+
 export enum EscrowStatus {
   Open = 0,
   Locked = 1,

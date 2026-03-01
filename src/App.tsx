@@ -6,6 +6,10 @@ import { Marketplace } from './pages/Marketplace';
 import { SellItem } from './pages/SellItem';
 import { ItemDetails } from './pages/ItemDetails';
 import { Dashboard } from './pages/Dashboard';
+import { SignIn } from './pages/SignIn';
+import { SignUp } from './pages/SignUp';
+import { SellerProfile } from './pages/SellerProfile';
+import { CategoryPage } from './pages/CategoryPage';
 import { motion, AnimatePresence } from 'motion/react';
 
 const queryClient = new QueryClient();
@@ -58,6 +62,10 @@ export default function App() {
                     <Dashboard account={account} provider={provider} />
                   </motion.div>
                 } />
+                <Route path="/signin" element={<SignIn />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/seller/:address" element={<SellerProfile />} />
+                <Route path="/category/:category" element={<CategoryPage />} />
               </Routes>
             </AnimatePresence>
           </main>

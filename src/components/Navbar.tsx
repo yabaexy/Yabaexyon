@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ShoppingBag, PlusCircle, User, Search, Wallet } from 'lucide-react';
+import { ShoppingBag, PlusCircle, User, Search, Wallet, LogIn } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface NavbarProps {
@@ -45,20 +45,37 @@ export const Navbar: React.FC<NavbarProps> = ({ account, onConnect }) => {
 
           <div className="flex items-center gap-4">
             {account ? (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 rounded-full border border-zinc-200">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="text-xs font-mono text-zinc-600">
-                  {account.slice(0, 6)}...{account.slice(-4)}
-                </span>
+              <div className="flex items-center gap-3">
+                <Link 
+                  to={`/seller/${account}`}
+                  className="w-8 h-8 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex items-center justify-center hover:border-brand transition-colors"
+                >
+                  <User className="w-4 h-4 text-zinc-50" />
+                </Link>
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-zinc-100 rounded-full border border-zinc-200">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-xs font-mono text-zinc-600">
+                    {account.slice(0, 6)}...{account.slice(-4)}
+                  </span>
+                </div>
               </div>
             ) : (
-              <button
-                onClick={onConnect}
-                className="flex items-center gap-2 bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm"
-              >
-                <Wallet className="w-4 h-4" />
-                Connect Wallet
-              </button>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/signin"
+                  className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 px-4 py-2 text-sm font-medium transition-all"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Sign In
+                </Link>
+                <button
+                  onClick={onConnect}
+                  className="flex items-center gap-2 bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Connect
+                </button>
+              </div>
             )}
           </div>
         </div>
