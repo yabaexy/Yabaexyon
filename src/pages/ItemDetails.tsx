@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ethers } from 'ethers';
 import { Item, EscrowStatus } from '../types';
 import { WYDA_TOKEN_ADDRESS, ESCROW_CONTRACT_ADDRESS, WYDA_ABI, ESCROW_ABI } from '../constants';
-import { Shield, ArrowLeft, User, Clock, CheckCircle2, Info, Share2, Heart, MessageSquare, ArrowRight } from 'lucide-react';
+import { Shield, ArrowLeft, User, Clock, CheckCircle2, Info, Share2, Heart, MessageSquare, ArrowRight, Gavel } from 'lucide-react';
 import { ItemCard } from '../components/ItemCard';
 
 interface ItemDetailsProps {
@@ -21,6 +21,8 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ account, provider }) =
     queryKey: ['item', id],
     queryFn: () => fetch(`/api/items/${id}`).then(res => res.json()),
   });
+
+  const [wydaPrice] = useState(0.15); // Mock price for conversion
 
   const { data: similarItems } = useQuery<Item[]>({
     queryKey: ['similar-items', item?.category],
@@ -169,9 +171,19 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ account, provider }) =
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
               <div className="glass-card rounded-[2rem] p-8 border-zinc-200/50 shadow-xl">
-                <div className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-2">Current Price</div>
-                <div className="text-5xl font-black text-zinc-900 mb-8 flex items-baseline gap-2">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs font-black text-zinc-400 uppercase tracking-widest">
+                    {item.pricingType === 'Auction' ? 'Starting Bid' : 'Current Price'}
+                  </div>
+                  <div className="px-2 py-1 bg-zinc-100 rounded-md text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                    {item.pricingType}
+                  </div>
+                </div>
+                <div className="text-5xl font-black text-zinc-900 mb-1 flex items-baseline gap-2">
                   {item.price} <span className="text-xl text-brand">WYDA</span>
+                </div>
+                <div className="text-sm font-bold text-zinc-400 mb-8">
+                  ≈ ${(parseFloat(item.price) * wydaPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
                 </div>
 
                 <div className="space-y-4">
@@ -184,8 +196,12 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ account, provider }) =
                       <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        <CheckCircle2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                        {account === item.sellerAddress ? "Your Listing" : "Buy Now"}
+                        {item.pricingType === 'Auction' ? (
+                          <Gavel className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                        ) : (
+                          <CheckCircle2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                        )}
+                        {account === item.sellerAddress ? "Your Listing" : item.pricingType === 'Auction' ? "Place Bid" : "Buy Now"}
                       </>
                     )}
                   </button>

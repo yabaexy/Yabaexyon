@@ -24,6 +24,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             referrerPolicy="no-referrer"
           />
+          <div className="absolute top-3 left-3 bg-zinc-900/80 backdrop-blur px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
+            <span className="text-[10px] font-black text-white uppercase tracking-widest">
+              {item.pricingType === 'Auction' ? 'Auction' : 'Fixed'}
+            </span>
+          </div>
           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
             <Tag className="w-3 h-3 text-brand" />
             <span className="text-xs font-bold text-zinc-900">{item.price} WYDA</span>

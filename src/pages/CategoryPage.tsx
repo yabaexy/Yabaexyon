@@ -30,7 +30,7 @@ export const CategoryPage: React.FC = () => {
             {category}
           </h1>
           <p className="text-zinc-500 max-w-xl">
-            Browse the best deals in {category}. All transactions are secured by WYDA escrow smart contracts.
+            Browse the best deals in {category}. All transactions are secured by Yabamate escrow smart contracts.
           </p>
         </div>
         

@@ -18,7 +18,7 @@ export const Marketplace: React.FC = () => {
           Discover Secondhand Treasures
         </h1>
         <p className="text-zinc-500 max-w-2xl">
-          Secure trading powered by the WYDA token and BSC smart contracts. 
+          Secure trading on Yabamate Market powered by BSC smart contracts. 
           Your funds are held in escrow until you confirm receipt.
         </p>
       </header>

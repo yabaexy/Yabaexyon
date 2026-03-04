@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { ESCROW_CONTRACT_ADDRESS, ESCROW_ABI } from '../constants';
-import { Upload, Package, DollarSign, Info } from 'lucide-react';
+import { Upload, Package, DollarSign, Info, TrendingUp, Zap, Gavel } from 'lucide-react';
 
 interface SellItemProps {
   account: string | null;
@@ -12,13 +12,40 @@ interface SellItemProps {
 export const SellItem: React.FC<SellItemProps> = ({ account, provider }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [wydaPrice, setWydaPrice] = useState<number>(0.15); // Mock initial price
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     price: '',
+    minPrice: '',
+    pricingType: 'Fixed' as 'Fixed' | 'Auction',
     category: 'Electronics',
     imageUrl: ''
   });
+
+  // Fetch real-time price (Mocking for WYDA, but structure is real)
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        // In a real scenario, you'd fetch from a DEX or price aggregator
+        // const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT');
+        // const data = await res.json();
+        // setWydaPrice(parseFloat(data.price) * 0.001); // Example conversion
+        
+        // Mocking a slight fluctuation
+        const fluctuation = (Math.random() - 0.5) * 0.01;
+        setWydaPrice(prev => Math.max(0.01, prev + fluctuation));
+      } catch (err) {
+        console.error("Price fetch error:", err);
+      }
+    };
+
+    const interval = setInterval(fetchPrice, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const usdtEquivalent = (parseFloat(formData.price) || 0) * wydaPrice;
+  const minUsdtEquivalent = (parseFloat(formData.minPrice) || 0) * wydaPrice;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,13 +56,14 @@ export const SellItem: React.FC<SellItemProps> = ({ account, provider }) => {
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(ESCROW_CONTRACT_ADDRESS, ESCROW_ABI, signer);
 
-      const priceWei = ethers.parseEther(formData.price);
+      const priceWei = ethers.parseEther(formData.price || "0");
+      const minPriceWei = ethers.parseEther(formData.minPrice || "0");
+      const pricingTypeInt = formData.pricingType === 'Fixed' ? 0 : 1;
       
       // 1. Create listing on chain
-      const tx = await contract.createListing(priceWei, "metadata_placeholder");
+      const tx = await contract.createListing(priceWei, minPriceWei, pricingTypeInt, "metadata_placeholder");
       const receipt = await tx.wait();
       
-      // Find the ListingCreated event to get the onChainId
       const event = receipt.logs.find((log: any) => {
         try {
           const parsed = contract.interface.parseLog(log);
@@ -56,6 +84,8 @@ export const SellItem: React.FC<SellItemProps> = ({ account, provider }) => {
           title: formData.title,
           description: formData.description,
           price: formData.price,
+          minPrice: formData.minPrice,
+          pricingType: formData.pricingType,
           imageUrl: formData.imageUrl || `https://picsum.photos/seed/${onChainId}/800/600`,
           sellerAddress: account,
           category: formData.category
@@ -72,110 +102,193 @@ export const SellItem: React.FC<SellItemProps> = ({ account, provider }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12">
-      <div className="glass-card rounded-3xl p-8">
-        <h1 className="text-2xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
-          <Package className="text-brand" />
-          List Your Item
-        </h1>
+    <div className="max-w-4xl mx-auto px-4 py-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Form */}
+        <div className="lg:col-span-2">
+          <div className="glass-card rounded-3xl p-8">
+            <h1 className="text-2xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
+              <Package className="text-brand" />
+              List Your Item
+            </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-semibold text-zinc-700 mb-2">Item Title</label>
-            <input
-              required
-              type="text"
-              value={formData.title}
-              onChange={e => setFormData({ ...formData, title: e.target.value })}
-              placeholder="e.g. Vintage Camera"
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
-            />
-          </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Pricing Type Toggle */}
+              <div className="flex p-1 bg-zinc-100 rounded-2xl mb-8">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, pricingType: 'Fixed' })}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                    formData.pricingType === 'Fixed' 
+                    ? 'bg-white text-zinc-900 shadow-sm' 
+                    : 'text-zinc-500 hover:text-zinc-700'
+                  }`}
+                >
+                  <Zap className="w-4 h-4" />
+                  Fixed Price
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, pricingType: 'Auction' })}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                    formData.pricingType === 'Auction' 
+                    ? 'bg-white text-zinc-900 shadow-sm' 
+                    : 'text-zinc-500 hover:text-zinc-700'
+                  }`}
+                >
+                  <Gavel className="w-4 h-4" />
+                  Bid Range
+                </button>
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-zinc-700 mb-2">Price (WYDA)</label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4" />
+              <div>
+                <label className="block text-sm font-semibold text-zinc-700 mb-2">Item Title</label>
                 <input
                   required
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={e => setFormData({ ...formData, price: e.target.value })}
-                  placeholder="0.00"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
+                  type="text"
+                  value={formData.title}
+                  onChange={e => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="e.g. Vintage Camera"
+                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
                 />
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-zinc-700 mb-2">Category</label>
-              <select
-                value={formData.category}
-                onChange={e => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all appearance-none bg-white"
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">
+                    {formData.pricingType === 'Fixed' ? 'Price (WYDA)' : 'Starting Bid (WYDA)'}
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4" />
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={e => setFormData({ ...formData, price: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
+                    />
+                  </div>
+                  <p className="mt-2 text-[10px] text-zinc-400 font-medium">
+                    ≈ ${usdtEquivalent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                  </p>
+                </div>
+
+                {formData.pricingType === 'Auction' && (
+                  <div>
+                    <label className="block text-sm font-semibold text-zinc-700 mb-2">Reserve Price (WYDA)</label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4" />
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.minPrice}
+                        onChange={e => setFormData({ ...formData, minPrice: e.target.value })}
+                        placeholder="0.00"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
+                      />
+                    </div>
+                    <p className="mt-2 text-[10px] text-zinc-400 font-medium">
+                      ≈ ${minUsdtEquivalent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Category</label>
+                  <select
+                    value={formData.category}
+                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all appearance-none bg-white"
+                  >
+                    <option>Electronics</option>
+                    <option>Fashion</option>
+                    <option>Home</option>
+                    <option>Collectibles</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-zinc-700 mb-2">Description</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Describe the condition, features, and any flaws..."
+                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-zinc-700 mb-2">Image URL (Optional)</label>
+                <input
+                  type="url"
+                  value={formData.imageUrl}
+                  onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
+                />
+              </div>
+
+              <button
+                disabled={loading || !account}
+                type="submit"
+                className="w-full py-4 bg-brand hover:bg-brand-dark disabled:bg-zinc-200 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg shadow-brand/20 transition-all flex items-center justify-center gap-2"
               >
-                <option>Electronics</option>
-                <option>Fashion</option>
-                <option>Home</option>
-                <option>Collectibles</option>
-                <option>Other</option>
-              </select>
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5" />
+                    {formData.pricingType === 'Fixed' ? 'Create Listing' : 'Start Auction'}
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Market Info Sidebar */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="glass-card rounded-3xl p-6 border-brand/20 bg-brand/5">
+            <h3 className="text-sm font-bold text-zinc-900 mb-4 flex items-center gap-2">
+              <TrendingUp className="text-brand w-4 h-4" />
+              Market Price
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <div className="text-[10px] uppercase font-black text-zinc-400 tracking-widest mb-1">WYDA / USDT</div>
+                <div className="text-2xl font-black text-zinc-900">
+                  ${wydaPrice.toFixed(4)}
+                </div>
+              </div>
+              <div className="h-px bg-brand/10" />
+              <div className="flex items-center justify-between text-[10px] font-bold">
+                <span className="text-zinc-400 uppercase">24h Change</span>
+                <span className="text-emerald-500">+4.2%</span>
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-zinc-700 mb-2">Description</label>
-            <textarea
-              required
-              rows={4}
-              value={formData.description}
-              onChange={e => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Describe the condition, features, and any flaws..."
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all resize-none"
-            />
+          <div className="glass-card rounded-3xl p-6">
+            <h3 className="text-sm font-bold text-zinc-900 mb-4 flex items-center gap-2">
+              <Info className="text-zinc-400 w-4 h-4" />
+              Pricing Guide
+            </h3>
+            <div className="space-y-4 text-xs text-zinc-500 leading-relaxed">
+              <p>
+                <strong className="text-zinc-900">Fixed Price:</strong> Your item is sold immediately when a buyer pays the full amount.
+              </p>
+              <p>
+                <strong className="text-zinc-900">Bid Range:</strong> Set a starting bid and an optional reserve price. Buyers can place bids within your specified range.
+              </p>
+            </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-zinc-700 mb-2">Image URL (Optional)</label>
-            <input
-              type="url"
-              value={formData.imageUrl}
-              onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
-              placeholder="https://example.com/image.jpg"
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
-            />
-          </div>
-
-          <div className="bg-brand/5 border border-brand/20 rounded-xl p-4 flex gap-3">
-            <Info className="text-brand w-5 h-5 shrink-0" />
-            <p className="text-xs text-zinc-600 leading-relaxed">
-              Listing an item requires a small gas fee on the BSC network. 
-              Once listed, it will be visible to all buyers in the marketplace.
-            </p>
-          </div>
-
-          <button
-            disabled={loading || !account}
-            type="submit"
-            className="w-full py-4 bg-brand hover:bg-brand-dark disabled:bg-zinc-200 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg shadow-brand/20 transition-all flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <>
-                <Upload className="w-5 h-5" />
-                Create Listing
-              </>
-            )}
-          </button>
-          
-          {!account && (
-            <p className="text-center text-xs text-red-500 font-medium">
-              Please connect your wallet to list items.
-            </p>
-          )}
-        </form>
+        </div>
       </div>
     </div>
   );

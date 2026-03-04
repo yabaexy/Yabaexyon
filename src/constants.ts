@@ -11,13 +11,13 @@ export const WYDA_ABI = [
 ];
 
 export const ESCROW_ABI = [
-  "function createListing(uint256 _price, string memory _metadataUri) external",
+  "function createListing(uint256 _price, uint256 _minPrice, uint8 _pricingType, string memory _metadataUri) external",
   "function buyItem(uint256 _id) external",
   "function confirmReceipt(uint256 _id) external",
   "function refundBuyer(uint256 _id) external",
-  "function listings(uint256) view returns (uint256 id, address seller, address buyer, uint256 price, uint8 status, string metadataUri)",
+  "function listings(uint256) view returns (uint256 id, address seller, address buyer, uint256 price, uint256 minPrice, uint8 status, uint8 pricingType, string metadataUri)",
   "function listingCount() view returns (uint256)",
-  "event ListingCreated(uint256 indexed id, address indexed seller, uint256 price, string metadataUri)",
+  "event ListingCreated(uint256 indexed id, address indexed seller, uint256 price, uint256 minPrice, uint8 pricingType, string metadataUri)",
   "event ListingLocked(uint256 indexed id, address indexed buyer)",
   "event ListingCompleted(uint256 indexed id)",
   "event ListingRefunded(uint256 indexed id)"

@@ -12,19 +12,22 @@ contract WYDAEscrow {
     uint256 public listingCount;
 
     enum Status { Open, Locked, Completed, Refunded, Disputed }
+    enum PricingType { Fixed, Auction }
 
     struct Listing {
         uint256 id;
         address payable seller;
         address payable buyer;
-        uint256 price;
+        uint256 price; // For Fixed: exact price. For Auction: current highest bid or starting price.
+        uint256 minPrice; // For Auction: minimum starting bid.
         Status status;
-        string metadataUri; // IPFS or Backend ID
+        PricingType pricingType;
+        string metadataUri;
     }
 
     mapping(uint256 => Listing) public listings;
 
-    event ListingCreated(uint256 indexed id, address indexed seller, uint256 price, string metadataUri);
+    event ListingCreated(uint256 indexed id, address indexed seller, uint256 price, uint256 minPrice, PricingType pricingType, string metadataUri);
     event ListingLocked(uint256 indexed id, address indexed buyer);
     event ListingCompleted(uint256 indexed id);
     event ListingRefunded(uint256 indexed id);
@@ -33,18 +36,20 @@ contract WYDAEscrow {
         wydaToken = _wydaToken;
     }
 
-    function createListing(uint256 _price, string memory _metadataUri) external {
-        require(_price > 0, "Price must be greater than zero");
+    function createListing(uint256 _price, uint256 _minPrice, PricingType _pricingType, string memory _metadataUri) external {
+        require(_price > 0 || _minPrice > 0, "Price must be greater than zero");
         listingCount++;
         listings[listingCount] = Listing({
             id: listingCount,
             seller: payable(msg.sender),
             buyer: payable(address(0)),
             price: _price,
+            minPrice: _minPrice,
             status: Status.Open,
+            pricingType: _pricingType,
             metadataUri: _metadataUri
         });
-        emit ListingCreated(listingCount, msg.sender, _price, _metadataUri);
+        emit ListingCreated(listingCount, msg.sender, _price, _minPrice, _pricingType, _metadataUri);
     }
 
     function buyItem(uint256 _id) external {

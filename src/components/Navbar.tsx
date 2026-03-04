@@ -19,7 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({ account, onConnect }) => {
             <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
               <ShoppingBag className="text-white w-5 h-5" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-zinc-900">WYDA</span>
+            <span className="text-xl font-bold tracking-tight text-zinc-900">Yabamate</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
@@ -44,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({ account, onConnect }) => {
           </div>
 
           <div className="flex items-center gap-4">
+            <div id="google_translate_element" className="hidden sm:block"></div>
             {account ? (
               <div className="flex items-center gap-3">
                 <Link 

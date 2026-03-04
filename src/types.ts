@@ -4,6 +4,8 @@ export interface Item {
   title: string;
   description: string;
   price: string;
+  minPrice?: string;
+  pricingType: 'Fixed' | 'Auction';
   imageUrl: string;
   sellerAddress: string;
   category: string;

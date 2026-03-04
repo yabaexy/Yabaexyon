@@ -56,7 +56,7 @@ export const SignUp: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold text-zinc-900">Create Profile</h1>
           <p className="text-zinc-500 text-sm mt-2">
-            Set up your identity on the WYDA Marketplace.
+            Set up your identity on the Yabamate Market.
           </p>
         </div>
 
