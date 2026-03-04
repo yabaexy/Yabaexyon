@@ -15,11 +15,14 @@ export const Navbar: React.FC<NavbarProps> = ({ account, onConnect }) => {
     <nav className="sticky top-0 z-50 glass-card border-b border-zinc-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
-              <ShoppingBag className="text-white w-5 h-5" />
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 bg-[#F2A93B] rounded-full border-2 border-black flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+              <span className="text-black font-black text-xl">Y</span>
             </div>
-            <span className="text-xl font-bold tracking-tight text-zinc-900">Yabamate</span>
+            <div className="flex flex-col leading-none">
+              <span className="text-xl font-black tracking-tighter text-zinc-900 uppercase">Yabamate</span>
+              <span className="text-[10px] font-bold text-zinc-500 tracking-[0.2em] uppercase ml-0.5">Market</span>
+            </div>
           </Link>
 
           <div className="hidden md:flex items-center gap-8">

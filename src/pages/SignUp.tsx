@@ -51,10 +51,13 @@ export const SignUp: React.FC = () => {
         className="glass-card rounded-3xl p-8"
       >
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-brand/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <UserPlus className="text-brand w-8 h-8" />
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-20 h-20 bg-[#F2A93B] rounded-full border-4 border-black flex items-center justify-center shadow-lg mb-4">
+              <span className="text-black font-black text-4xl">Y</span>
+            </div>
+            <h1 className="text-3xl font-black tracking-tighter text-zinc-900 uppercase">Yabamate</h1>
+            <span className="text-xs font-bold text-zinc-500 tracking-[0.3em] uppercase">Market</span>
           </div>
-          <h1 className="text-2xl font-bold text-zinc-900">Create Profile</h1>
           <p className="text-zinc-500 text-sm mt-2">
             Set up your identity on the Yabamate Market.
           </p>
