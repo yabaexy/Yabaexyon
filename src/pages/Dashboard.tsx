@@ -3,7 +3,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ethers } from 'ethers';
 import { ESCROW_CONTRACT_ADDRESS, ESCROW_ABI } from '../constants';
 import { Item, EscrowStatus } from '../types';
-import { Package, ArrowRight, CheckCircle, RotateCcw, Settings, Edit2, X, Save } from 'lucide-react';
+import { Package, ArrowRight, CheckCircle, RotateCcw, Settings, Edit2, X, Save, ShoppingBag, PlusCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ItemCard } from '../components/ItemCard';
 
 interface DashboardProps {
   account: string | null;
@@ -18,6 +20,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['user', account],
     queryFn: () => fetch(`/api/users/${account}`).then(res => res.ok ? res.json() : null),
+    enabled: !!account,
+  });
+
+  const { data: myItems, isLoading: itemsLoading } = useQuery<Item[]>({
+    queryKey: ['my-items', account],
+    queryFn: () => fetch(`/api/users/${account}/items`).then(res => res.json()),
     enabled: !!account,
   });
 
@@ -159,6 +167,48 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
                     </tr>
                   </tbody>
                 </table>
+              </div>
+            )}
+          </section>
+
+          {/* My Listings Section */}
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <ShoppingBag className="text-brand" />
+                My Listings
+              </h2>
+              <Link 
+                to="/sell" 
+                className="text-sm font-bold text-brand hover:underline flex items-center gap-1"
+              >
+                <PlusCircle className="w-4 h-4" />
+                List New Item
+              </Link>
+            </div>
+
+            {itemsLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-64 bg-zinc-100 rounded-2xl animate-pulse" />
+                ))}
+              </div>
+            ) : myItems && myItems.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {myItems.map(item => (
+                  <ItemCard key={item.id} item={item} />
+                ))}
+              </div>
+            ) : (
+              <div className="glass-card rounded-2xl p-12 text-center">
+                <p className="text-zinc-500 mb-4">You haven't listed any items for sale yet.</p>
+                <Link 
+                  to="/sell" 
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-brand text-white font-bold rounded-xl hover:bg-brand-dark transition-all"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  Start Selling
+                </Link>
               </div>
             )}
           </section>
