@@ -109,6 +109,40 @@ async function startServer() {
     res.json(item);
   });
 
+  app.put("/api/items/:id", (req, res) => {
+    const { id } = req.params;
+    const { title, description, price, minPrice, pricingType, imageUrl, sellerAddress, category } = req.body;
+    
+    // Security check: Ensure the item belongs to the sellerAddress
+    const item = db.prepare("SELECT sellerAddress FROM items WHERE id = ?").get(id) as { sellerAddress: string } | undefined;
+    if (!item) return res.status(404).json({ error: "Item not found" });
+    if (item.sellerAddress.toLowerCase() !== sellerAddress.toLowerCase()) {
+      return res.status(403).json({ error: "Unauthorized: You do not own this item" });
+    }
+
+    db.prepare(`
+      UPDATE items 
+      SET title = ?, description = ?, price = ?, minPrice = ?, pricingType = ?, imageUrl = ?, category = ?
+      WHERE id = ?
+    `).run(title, description, price, minPrice, pricingType, imageUrl, category, id);
+    
+    res.json({ success: true });
+  });
+
+  app.delete("/api/items/:id", (req, res) => {
+    const { id } = req.params;
+    const { sellerAddress } = req.body;
+
+    const item = db.prepare("SELECT sellerAddress FROM items WHERE id = ?").get(id) as { sellerAddress: string } | undefined;
+    if (!item) return res.status(404).json({ error: "Item not found" });
+    if (item.sellerAddress.toLowerCase() !== sellerAddress.toLowerCase()) {
+      return res.status(403).json({ error: "Unauthorized: You do not own this item" });
+    }
+
+    db.prepare("DELETE FROM items WHERE id = ?").run(id);
+    res.json({ success: true });
+  });
+
   // User Routes
   app.get("/api/users/:address", (req, res) => {
     const user = db.prepare("SELECT * FROM users WHERE address = ?").get(req.params.address);

@@ -196,7 +196,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
             ) : myItems && myItems.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {myItems.map(item => (
-                  <ItemCard key={item.id} item={item} />
+                  <ItemCard 
+                    key={item.id} 
+                    item={item} 
+                    onDelete={() => queryClient.invalidateQueries({ queryKey: ['my-items', account] })}
+                  />
                 ))}
               </div>
             ) : (

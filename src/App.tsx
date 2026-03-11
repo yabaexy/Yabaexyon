@@ -4,6 +4,7 @@ import { useWallet } from './hooks/useWallet';
 import { Navbar } from './components/Navbar';
 import { Marketplace } from './pages/Marketplace';
 import { SellItem } from './pages/SellItem';
+import { EditItem } from './pages/EditItem';
 import { ItemDetails } from './pages/ItemDetails';
 import { Dashboard } from './pages/Dashboard';
 import { SignIn } from './pages/SignIn';
@@ -42,6 +43,15 @@ export default function App() {
                     exit={{ opacity: 0, y: -20 }}
                   >
                     <SellItem account={account} provider={provider} />
+                  </motion.div>
+                } />
+                <Route path="/edit/:id" element={
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                  >
+                    <EditItem />
                   </motion.div>
                 } />
                 <Route path="/item/:id" element={
