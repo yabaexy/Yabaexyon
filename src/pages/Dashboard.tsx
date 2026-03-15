@@ -3,9 +3,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ethers } from 'ethers';
 import { ESCROW_CONTRACT_ADDRESS, ESCROW_ABI } from '../constants';
 import { Item, EscrowStatus } from '../types';
-import { Package, ArrowRight, CheckCircle, RotateCcw, Settings, Edit2, X, Save, ShoppingBag, PlusCircle } from 'lucide-react';
+import { Package, ArrowRight, CheckCircle, RotateCcw, Settings, Edit2, X, Save, ShoppingBag, PlusCircle, ExternalLink, Calendar, Star, Coins } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ItemCard } from '../components/ItemCard';
+import { motion } from 'motion/react';
+import { WYDA_TOKEN_ADDRESS, WYDA_ABI } from '../constants';
 
 interface DashboardProps {
   account: string | null;
@@ -16,6 +18,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ username: '', bio: '', avatarUrl: '' });
+  const [filters, setFilters] = useState({
+    category: 'All',
+    condition: 'All',
+    minPrice: '',
+    maxPrice: ''
+  });
 
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['user', account],
@@ -23,10 +31,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
     enabled: !!account,
   });
 
+  const { data: balance, isLoading: balanceLoading } = useQuery({
+    queryKey: ['balance', account],
+    queryFn: async () => {
+      if (!provider || !account) return '0';
+      try {
+        const contract = new ethers.Contract(WYDA_TOKEN_ADDRESS, WYDA_ABI, provider);
+        const bal = await contract.balanceOf(account);
+        return ethers.formatEther(bal);
+      } catch (err) {
+        console.error("Balance fetch error:", err);
+        return '0';
+      }
+    },
+    enabled: !!account && !!provider,
+    refetchInterval: 10000, // Refetch every 10 seconds
+  });
+
   const { data: myItems, isLoading: itemsLoading } = useQuery<Item[]>({
     queryKey: ['my-items', account],
     queryFn: () => fetch(`/api/users/${account}/items`).then(res => res.json()),
     enabled: !!account,
+  });
+
+  const filteredItems = myItems?.filter(item => {
+    const matchesCategory = filters.category === 'All' || item.category === filters.category;
+    const matchesCondition = filters.condition === 'All' || item.condition === filters.condition;
+    const matchesMinPrice = filters.minPrice === '' || parseFloat(item.price) >= parseFloat(filters.minPrice);
+    const matchesMaxPrice = filters.maxPrice === '' || parseFloat(item.price) <= parseFloat(filters.maxPrice);
+    return matchesCategory && matchesCondition && matchesMinPrice && matchesMaxPrice;
   });
 
   const handleEdit = () => {
@@ -66,14 +99,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
           <h1 className="text-3xl font-bold text-zinc-900">My Dashboard</h1>
           <p className="text-zinc-500">Manage your profile and active trades.</p>
         </div>
-        {account && user && !isEditing && (
-          <button 
-            onClick={handleEdit}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-bold transition-all"
+        {account && user && (
+          <Link 
+            to={`/seller/${account}`}
+            className="flex items-center gap-2 px-4 py-2 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl font-bold transition-all"
           >
-            <Edit2 className="w-4 h-4" />
-            Edit Profile
-          </button>
+            <ExternalLink className="w-4 h-4" />
+            View Public Profile
+          </Link>
         )}
       </header>
 
@@ -82,198 +115,291 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
           <p className="text-zinc-500 mb-4">Please connect your wallet to view your dashboard.</p>
         </div>
       ) : (
-        <div className="space-y-12">
-          {/* Profile Table Section */}
-          <section>
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Settings className="text-brand" />
-              Profile Information
-            </h2>
-            
-            {isEditing ? (
-              <div className="glass-card rounded-3xl p-8 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-zinc-700 mb-2">Username</label>
-                    <input
-                      type="text"
-                      value={editForm.username}
-                      onChange={e => setEditForm({ ...editForm, username: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-zinc-700 mb-2">Avatar URL</label>
-                    <input
-                      type="text"
-                      value={editForm.avatarUrl}
-                      onChange={e => setEditForm({ ...editForm, avatarUrl: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 outline-none"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-zinc-700 mb-2">Bio</label>
-                    <textarea
-                      rows={3}
-                      value={editForm.bio}
-                      onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 outline-none resize-none"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-4 justify-end">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+          {/* Sidebar: Profile Management */}
+          <div className="lg:col-span-1">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="glass-card rounded-3xl p-6 sticky top-24"
+            >
+              <div className="w-32 h-32 rounded-3xl bg-zinc-100 border border-zinc-200 mx-auto mb-6 overflow-hidden relative group">
+                <img 
+                  src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${account}`} 
+                  alt={user?.username} 
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                {!isEditing && (
                   <button 
-                    onClick={() => setIsEditing(false)}
-                    className="px-6 py-2 bg-zinc-100 text-zinc-600 rounded-xl font-bold hover:bg-zinc-200"
+                    onClick={handleEdit}
+                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
                   >
-                    Cancel
+                    <Edit2 className="w-6 h-6" />
                   </button>
-                  <button 
-                    onClick={handleSave}
-                    className="px-6 py-2 bg-brand text-white rounded-xl font-bold hover:bg-brand-dark flex items-center gap-2"
-                  >
-                    <Save className="w-4 h-4" />
-                    Save Changes
-                  </button>
-                </div>
+                )}
               </div>
-            ) : (
-              <div className="glass-card rounded-2xl overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-zinc-50 border-b border-zinc-100">
-                      <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Field</th>
-                      <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-wider">Value</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100">
-                    <tr>
-                      <td className="px-6 py-4 text-sm font-medium text-zinc-500">Wallet Address</td>
-                      <td className="px-6 py-4 text-sm font-mono text-zinc-900">{account}</td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 text-sm font-medium text-zinc-500">Username</td>
-                      <td className="px-6 py-4 text-sm text-zinc-900">{user?.username || 'Not set'}</td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 text-sm font-medium text-zinc-500">Bio</td>
-                      <td className="px-6 py-4 text-sm text-zinc-900">{user?.bio || 'No bio provided'}</td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 text-sm font-medium text-zinc-500">Member Since</td>
-                      <td className="px-6 py-4 text-sm text-zinc-900">
-                        {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
 
-          {/* My Listings Section */}
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <ShoppingBag className="text-brand" />
-                My Listings
-              </h2>
-              <Link 
-                to="/sell" 
-                className="text-sm font-bold text-brand hover:underline flex items-center gap-1"
-              >
-                <PlusCircle className="w-4 h-4" />
-                List New Item
-              </Link>
-            </div>
-
-            {itemsLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-64 bg-zinc-100 rounded-2xl animate-pulse" />
-                ))}
-              </div>
-            ) : myItems && myItems.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {myItems.map(item => (
-                  <ItemCard 
-                    key={item.id} 
-                    item={item} 
-                    onDelete={() => queryClient.invalidateQueries({ queryKey: ['my-items', account] })}
+              {isEditing ? (
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={editForm.username}
+                    onChange={e => setEditForm({ ...editForm, username: e.target.value })}
+                    placeholder="Username"
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:ring-2 focus:ring-brand/20 outline-none"
                   />
-                ))}
-              </div>
-            ) : (
-              <div className="glass-card rounded-2xl p-12 text-center">
-                <p className="text-zinc-500 mb-4">You haven't listed any items for sale yet.</p>
-                <Link 
-                  to="/sell" 
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-brand text-white font-bold rounded-xl hover:bg-brand-dark transition-all"
-                >
-                  <PlusCircle className="w-5 h-5" />
-                  Start Selling
-                </Link>
-              </div>
-            )}
-          </section>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <section>
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Package className="text-brand" />
-              Purchases
-            </h2>
-            <div className="space-y-4">
-              <div className="glass-card rounded-2xl p-6 border-l-4 border-l-brand">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-bold text-zinc-900">Vintage Film Camera</h3>
-                    <p className="text-xs text-zinc-500 mt-1">Seller: 0x1234...5678</p>
+                  <input
+                    type="text"
+                    value={editForm.avatarUrl}
+                    onChange={e => setEditForm({ ...editForm, avatarUrl: e.target.value })}
+                    placeholder="Avatar URL"
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:ring-2 focus:ring-brand/20 outline-none"
+                  />
+                  <textarea
+                    rows={3}
+                    value={editForm.bio}
+                    onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
+                    placeholder="Bio"
+                    className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm focus:ring-2 focus:ring-brand/20 outline-none resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setIsEditing(false)}
+                      className="flex-1 py-2 bg-zinc-100 text-zinc-600 rounded-lg text-xs font-bold"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleSave}
+                      className="flex-1 py-2 bg-brand text-white rounded-lg text-xs font-bold"
+                    >
+                      Save
+                    </button>
                   </div>
-                  <span className="px-2 py-1 bg-brand/10 text-brand text-[10px] font-bold rounded uppercase">
-                    Locked in Escrow
-                  </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-lg font-bold">450 WYDA</div>
-                  <button className="px-4 py-2 bg-zinc-900 text-white text-sm font-bold rounded-lg hover:bg-black transition-all">
-                    Confirm Receipt
-                  </button>
-                </div>
-              </div>
-              <p className="text-center text-xs text-zinc-400 py-8">No other active purchases.</p>
-            </div>
-          </section>
+              ) : (
+                <>
+                  <h1 className="text-xl font-bold text-center text-zinc-900 mb-1">{user?.username || 'Unnamed Seller'}</h1>
+                  <p className="text-[10px] font-mono text-zinc-400 text-center mb-6 truncate">
+                    {account}
+                  </p>
 
-          <section>
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <RotateCcw className="text-brand" />
-              Sales
-            </h2>
-            <div className="space-y-4">
-              <div className="glass-card rounded-2xl p-6 border-l-4 border-l-emerald-500">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-bold text-zinc-900">Mechanical Keyboard</h3>
-                    <p className="text-xs text-zinc-500 mt-1">Buyer: 0xabcd...efgh</p>
+                  <div className="space-y-4 mb-8">
+                    <div className="flex items-center gap-3 text-sm text-zinc-600">
+                      <Calendar className="w-4 h-4 text-zinc-400" />
+                      <span>Joined {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-zinc-600">
+                      <ShoppingBag className="w-4 h-4 text-zinc-400" />
+                      <span>{myItems?.length || 0} Items Listed</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-zinc-600">
+                      <Star className="w-4 h-4 text-brand" />
+                      <span>4.9 Seller Rating</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-zinc-600">
+                      <Coins className="w-4 h-4 text-brand" />
+                      <div className="flex flex-col">
+                        <span className="font-bold text-zinc-900">
+                          {balanceLoading ? '...' : parseFloat(balance || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} WYDA
+                        </span>
+                        <span className="text-[10px] text-zinc-400 uppercase font-black tracking-widest">Available Balance</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="px-2 py-1 bg-emerald-100 text-emerald-600 text-[10px] font-bold rounded uppercase">
-                    Completed
-                  </span>
-                </div>
+
+                  <div className="pt-6 border-t border-zinc-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">About</h3>
+                      <button onClick={handleEdit} className="text-brand hover:text-brand-dark transition-colors">
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <p className="text-sm text-zinc-600 leading-relaxed">
+                      {user?.bio || "No bio provided."}
+                    </p>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </div>
+
+          {/* Main Content: Listings & Trades */}
+          <div className="lg:col-span-3 space-y-12">
+            {/* My Listings Section */}
+            <section>
+              <div className="flex flex-col gap-6 mb-8">
                 <div className="flex items-center justify-between">
-                  <div className="text-lg font-bold">120 WYDA</div>
-                  <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                    <CheckCircle className="w-3 h-3" />
-                    Funds Released
-                  </span>
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <ShoppingBag className="text-brand" />
+                    My Listings
+                  </h2>
+                  <Link 
+                    to="/sell" 
+                    className="text-sm font-bold text-brand hover:underline flex items-center gap-1"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    List New Item
+                  </Link>
+                </div>
+
+                {/* Filters UI */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Category</label>
+                    <select 
+                      value={filters.category}
+                      onChange={e => setFilters({ ...filters, category: e.target.value })}
+                      className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:ring-2 focus:ring-brand/20 outline-none"
+                    >
+                      <option>All</option>
+                      <option>Electronics</option>
+                      <option>Fashion</option>
+                      <option>Home</option>
+                      <option>Collectibles</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Condition</label>
+                    <select 
+                      value={filters.condition}
+                      onChange={e => setFilters({ ...filters, condition: e.target.value })}
+                      className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:ring-2 focus:ring-brand/20 outline-none"
+                    >
+                      <option>All</option>
+                      <option>New</option>
+                      <option>Like New</option>
+                      <option>Used - Excellent</option>
+                      <option>Used - Good</option>
+                      <option>Used - Fair</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Min Price (WYDA)</label>
+                    <input 
+                      type="number"
+                      value={filters.minPrice}
+                      onChange={e => setFilters({ ...filters, minPrice: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:ring-2 focus:ring-brand/20 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Max Price (WYDA)</label>
+                    <input 
+                      type="number"
+                      value={filters.maxPrice}
+                      onChange={e => setFilters({ ...filters, maxPrice: e.target.value })}
+                      placeholder="Any"
+                      className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs focus:ring-2 focus:ring-brand/20 outline-none"
+                    />
+                  </div>
                 </div>
               </div>
-              <p className="text-center text-xs text-zinc-400 py-8">No other active sales.</p>
+
+              {itemsLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-64 bg-zinc-100 rounded-2xl animate-pulse" />
+                  ))}
+                </div>
+              ) : filteredItems && filteredItems.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredItems.map(item => (
+                    <ItemCard 
+                      key={item.id} 
+                      item={item} 
+                      onDelete={() => queryClient.invalidateQueries({ queryKey: ['my-items', account] })}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="glass-card rounded-2xl p-12 text-center">
+                  <p className="text-zinc-500 mb-4">
+                    {myItems && myItems.length > 0 
+                      ? "No items match your current filters." 
+                      : "You haven't listed any items for sale yet."}
+                  </p>
+                  {myItems && myItems.length > 0 ? (
+                    <button 
+                      onClick={() => setFilters({ category: 'All', condition: 'All', minPrice: '', maxPrice: '' })}
+                      className="text-brand font-bold hover:underline"
+                    >
+                      Clear all filters
+                    </button>
+                  ) : (
+                    <Link 
+                      to="/sell" 
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-brand text-white font-bold rounded-xl hover:bg-brand-dark transition-all"
+                    >
+                      <PlusCircle className="w-5 h-5" />
+                      Start Selling
+                    </Link>
+                  )}
+                </div>
+              )}
+            </section>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              <section>
+                <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <Package className="text-brand" />
+                  Purchases
+                </h2>
+                <div className="space-y-4">
+                  <div className="glass-card rounded-2xl p-6 border-l-4 border-l-brand">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-bold text-zinc-900">Vintage Film Camera</h3>
+                        <p className="text-xs text-zinc-500 mt-1">Seller: 0x1234...5678</p>
+                      </div>
+                      <span className="px-2 py-1 bg-brand/10 text-brand text-[10px] font-bold rounded uppercase">
+                        Locked in Escrow
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-lg font-bold">450 WYDA</div>
+                      <button className="px-4 py-2 bg-zinc-900 text-white text-sm font-bold rounded-lg hover:bg-black transition-all">
+                        Confirm Receipt
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-center text-xs text-zinc-400 py-8">No other active purchases.</p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <RotateCcw className="text-brand" />
+                  Sales
+                </h2>
+                <div className="space-y-4">
+                  <div className="glass-card rounded-2xl p-6 border-l-4 border-l-emerald-500">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-bold text-zinc-900">Mechanical Keyboard</h3>
+                        <p className="text-xs text-zinc-500 mt-1">Buyer: 0xabcd...efgh</p>
+                      </div>
+                      <span className="px-2 py-1 bg-emerald-100 text-emerald-600 text-[10px] font-bold rounded uppercase">
+                        Completed
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-lg font-bold">120 WYDA</div>
+                      <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Funds Released
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-center text-xs text-zinc-400 py-8">No other active sales.</p>
+                </div>
+              </section>
             </div>
-          </section>
+          </div>
         </div>
-      </div>
       )}
     </div>
   );

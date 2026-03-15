@@ -1,13 +1,16 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Item, User } from '../types';
 import { ItemCard } from '../components/ItemCard';
 import { motion } from 'motion/react';
-import { MapPin, Calendar, ShoppingBag, Star } from 'lucide-react';
+import { MapPin, Calendar, ShoppingBag, Star, Edit2 } from 'lucide-react';
+import { useWallet } from '../hooks/useWallet';
 
 export const SellerProfile: React.FC = () => {
   const { address } = useParams();
+  const { account } = useWallet();
+  const isOwner = account?.toLowerCase() === address?.toLowerCase();
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ['user', address],
@@ -62,9 +65,19 @@ export const SellerProfile: React.FC = () => {
 
             <div className="pt-6 border-t border-zinc-100">
               <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">About</h3>
-              <p className="text-sm text-zinc-600 leading-relaxed">
+              <p className="text-sm text-zinc-600 leading-relaxed mb-6">
                 {user.bio || "No bio provided."}
               </p>
+              
+              {isOwner && (
+                <Link 
+                  to="/dashboard"
+                  className="flex items-center justify-center gap-2 w-full py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-bold transition-all text-sm"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit Profile
+                </Link>
+              )}
             </div>
           </motion.div>
         </div>

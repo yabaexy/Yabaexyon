@@ -20,6 +20,7 @@ export const SellItem: React.FC<SellItemProps> = ({ account, provider }) => {
     minPrice: '',
     pricingType: 'Fixed' as 'Fixed' | 'Auction',
     category: 'Electronics',
+    condition: 'New',
     imageUrl: ''
   });
 
@@ -88,7 +89,8 @@ export const SellItem: React.FC<SellItemProps> = ({ account, provider }) => {
           pricingType: formData.pricingType,
           imageUrl: formData.imageUrl || `https://picsum.photos/seed/${onChainId}/800/600`,
           sellerAddress: account,
-          category: formData.category
+          category: formData.category,
+          condition: formData.condition
         })
       });
 
@@ -142,20 +144,24 @@ export const SellItem: React.FC<SellItemProps> = ({ account, provider }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-zinc-700 mb-2">Item Title</label>
+                <div className="flex justify-between items-end mb-2">
+                  <label className="block text-xs font-black uppercase tracking-widest text-zinc-500">Item Title</label>
+                  <span className="text-[10px] font-mono text-zinc-400">{formData.title.length}/60</span>
+                </div>
                 <input
                   required
+                  maxLength={60}
                   type="text"
                   value={formData.title}
                   onChange={e => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g. Vintage Camera"
-                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
+                  placeholder="e.g. Vintage 1970s Film Camera"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-zinc-100 focus:border-brand outline-none transition-all font-medium"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-2">
+                  <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 mb-2">
                     {formData.pricingType === 'Fixed' ? 'Price (WYDA)' : 'Starting Bid (WYDA)'}
                   </label>
                   <div className="relative">
@@ -164,74 +170,114 @@ export const SellItem: React.FC<SellItemProps> = ({ account, provider }) => {
                       required
                       type="number"
                       step="0.01"
+                      min="0.01"
                       value={formData.price}
                       onChange={e => setFormData({ ...formData, price: e.target.value })}
                       placeholder="0.00"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-zinc-100 focus:border-brand outline-none transition-all font-mono"
                     />
                   </div>
-                  <p className="mt-2 text-[10px] text-zinc-400 font-medium">
-                    ≈ ${usdtEquivalent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                  <p className="mt-2 text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">
+                    ≈ ${usdtEquivalent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                   </p>
                 </div>
 
                 {formData.pricingType === 'Auction' && (
                   <div>
-                    <label className="block text-sm font-semibold text-zinc-700 mb-2">Reserve Price (WYDA)</label>
+                    <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 mb-2">Reserve Price (WYDA)</label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4" />
                       <input
                         type="number"
                         step="0.01"
+                        min="0.01"
                         value={formData.minPrice}
                         onChange={e => setFormData({ ...formData, minPrice: e.target.value })}
                         placeholder="0.00"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-zinc-100 focus:border-brand outline-none transition-all font-mono"
                       />
                     </div>
-                    <p className="mt-2 text-[10px] text-zinc-400 font-medium">
-                      ≈ ${minUsdtEquivalent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                    <p className="mt-2 text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">
+                      ≈ ${minUsdtEquivalent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                     </p>
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Category</label>
-                  <select
-                    value={formData.category}
-                    onChange={e => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all appearance-none bg-white"
-                  >
-                    <option>Electronics</option>
-                    <option>Fashion</option>
-                    <option>Home</option>
-                    <option>Collectibles</option>
-                    <option>Other</option>
-                  </select>
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 mb-2">Category</label>
+                    <select
+                      value={formData.category}
+                      onChange={e => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-zinc-100 focus:border-brand outline-none transition-all appearance-none bg-white font-medium"
+                    >
+                      <option>Electronics</option>
+                      <option>Fashion</option>
+                      <option>Home</option>
+                      <option>Collectibles</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 mb-2">Condition</label>
+                    <select
+                      value={formData.condition}
+                      onChange={e => setFormData({ ...formData, condition: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-zinc-100 focus:border-brand outline-none transition-all appearance-none bg-white font-medium"
+                    >
+                      <option>New</option>
+                      <option>Like New</option>
+                      <option>Used - Excellent</option>
+                      <option>Used - Good</option>
+                      <option>Used - Fair</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
 
               <div>
-                <label className="block text-sm font-semibold text-zinc-700 mb-2">Description</label>
+                <div className="flex justify-between items-end mb-2">
+                  <label className="block text-xs font-black uppercase tracking-widest text-zinc-500">Specific Description</label>
+                  <span className="text-[10px] font-mono text-zinc-400">{formData.description.length}/500</span>
+                </div>
                 <textarea
                   required
-                  rows={4}
+                  maxLength={500}
+                  rows={5}
                   value={formData.description}
                   onChange={e => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe the condition, features, and any flaws..."
-                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all resize-none"
+                  placeholder="Provide specific details about condition, history, and technical specs..."
+                  className="w-full px-4 py-3 rounded-xl border-2 border-zinc-100 focus:border-brand outline-none transition-all resize-none leading-relaxed"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-zinc-700 mb-2">Image URL (Optional)</label>
-                <input
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
-                />
+                <label className="block text-xs font-black uppercase tracking-widest text-zinc-500 mb-2">Image URL</label>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <input
+                      required
+                      type="url"
+                      value={formData.imageUrl}
+                      onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                      placeholder="https://images.unsplash.com/photo-..."
+                      className="w-full px-4 py-3 rounded-xl border-2 border-zinc-100 focus:border-brand outline-none transition-all font-mono text-xs"
+                    />
+                  </div>
+                  {formData.imageUrl && (
+                    <div className="w-12 h-12 rounded-lg border-2 border-zinc-100 overflow-hidden flex-shrink-0">
+                      <img 
+                        src={formData.imageUrl} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/150?text=Error')}
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  )}
+                </div>
+                <p className="mt-2 text-[10px] text-zinc-400 italic">
+                  Tip: High-quality images increase trust and sales speed.
+                </p>
               </div>
 
               <button
@@ -261,7 +307,7 @@ export const SellItem: React.FC<SellItemProps> = ({ account, provider }) => {
             </h3>
             <div className="space-y-4">
               <div>
-                <div className="text-[10px] uppercase font-black text-zinc-400 tracking-widest mb-1">WYDA / USDT</div>
+                <div className="text-[10px] uppercase font-black text-zinc-400 tracking-widest mb-1">WYDA / USD</div>
                 <div className="text-2xl font-black text-zinc-900">
                   ${wydaPrice.toFixed(4)}
                 </div>

@@ -22,6 +22,7 @@ db.exec(`
     imageUrl TEXT,
     sellerAddress TEXT NOT NULL,
     category TEXT,
+    condition TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
@@ -94,11 +95,11 @@ async function startServer() {
   });
 
   app.post("/api/items", (req, res) => {
-    const { onChainId, title, description, price, minPrice, pricingType, imageUrl, sellerAddress, category } = req.body;
+    const { onChainId, title, description, price, minPrice, pricingType, imageUrl, sellerAddress, category, condition } = req.body;
     const info = db.prepare(`
-      INSERT INTO items (onChainId, title, description, price, minPrice, pricingType, imageUrl, sellerAddress, category)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(onChainId, title, description, price, minPrice, pricingType, imageUrl, sellerAddress, category);
+      INSERT INTO items (onChainId, title, description, price, minPrice, pricingType, imageUrl, sellerAddress, category, condition)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(onChainId, title, description, price, minPrice, pricingType, imageUrl, sellerAddress, category, condition);
     
     res.json({ id: info.lastInsertRowid });
   });
@@ -111,7 +112,7 @@ async function startServer() {
 
   app.put("/api/items/:id", (req, res) => {
     const { id } = req.params;
-    const { title, description, price, minPrice, pricingType, imageUrl, sellerAddress, category } = req.body;
+    const { title, description, price, minPrice, pricingType, imageUrl, sellerAddress, category, condition } = req.body;
     
     // Security check: Ensure the item belongs to the sellerAddress
     const item = db.prepare("SELECT sellerAddress FROM items WHERE id = ?").get(id) as { sellerAddress: string } | undefined;
@@ -122,9 +123,9 @@ async function startServer() {
 
     db.prepare(`
       UPDATE items 
-      SET title = ?, description = ?, price = ?, minPrice = ?, pricingType = ?, imageUrl = ?, category = ?
+      SET title = ?, description = ?, price = ?, minPrice = ?, pricingType = ?, imageUrl = ?, category = ?, condition = ?
       WHERE id = ?
-    `).run(title, description, price, minPrice, pricingType, imageUrl, category, id);
+    `).run(title, description, price, minPrice, pricingType, imageUrl, category, condition, id);
     
     res.json({ success: true });
   });

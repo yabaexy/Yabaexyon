@@ -9,6 +9,7 @@ export interface Item {
   imageUrl: string;
   sellerAddress: string;
   category: string;
+  condition: string;
   createdAt: string;
 }
 
