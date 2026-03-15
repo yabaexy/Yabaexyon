@@ -54,8 +54,20 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ account, provider }) =
       const buyTx = await escrowContract.buyItem(item.onChainId);
       await buyTx.wait();
 
+      // 3. Record in backend
+      await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemId: item.id,
+          buyerAddress: account,
+          sellerAddress: item.sellerAddress,
+          price: item.price
+        })
+      });
+
       alert("Purchase successful! Funds are now in escrow.");
-      navigate('/dashboard');
+      navigate('/profile');
     } catch (err: any) {
       console.error(err);
       alert("Error during purchase: " + (err.reason || err.message));

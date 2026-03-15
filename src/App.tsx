@@ -6,9 +6,7 @@ import { Marketplace } from './pages/Marketplace';
 import { SellItem } from './pages/SellItem';
 import { EditItem } from './pages/EditItem';
 import { ItemDetails } from './pages/ItemDetails';
-import { Dashboard } from './pages/Dashboard';
-import { SignIn } from './pages/SignIn';
-import { SignUp } from './pages/SignUp';
+import { Profile } from './pages/Profile';
 import { SellerProfile } from './pages/SellerProfile';
 import { CategoryPage } from './pages/CategoryPage';
 import { motion, AnimatePresence } from 'motion/react';
@@ -63,17 +61,15 @@ export default function App() {
                     <ItemDetails account={account} provider={provider} />
                   </motion.div>
                 } />
-                <Route path="/dashboard" element={
+                <Route path="/profile" element={
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    <Dashboard account={account} provider={provider} />
+                    <Profile account={account} provider={provider} />
                   </motion.div>
                 } />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/signup" element={<SignUp />} />
                 <Route path="/seller/:address" element={<SellerProfile />} />
                 <Route path="/category/:category" element={<CategoryPage />} />
               </Routes>

@@ -45,6 +45,21 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    itemId INTEGER NOT NULL,
+    buyerAddress TEXT NOT NULL,
+    sellerAddress TEXT NOT NULL,
+    price TEXT NOT NULL,
+    status TEXT DEFAULT 'Completed',
+    rating INTEGER,
+    comment TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (itemId) REFERENCES items(id)
+  )
+`);
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -171,6 +186,45 @@ async function startServer() {
   app.get("/api/users/:address/items", (req, res) => {
     const items = db.prepare("SELECT * FROM items WHERE sellerAddress = ? ORDER BY createdAt DESC").all(req.params.address);
     res.json(items);
+  });
+
+  app.get("/api/users/:address/transactions", (req, res) => {
+    const { address } = req.params;
+    const transactions = db.prepare(`
+      SELECT t.*, i.title as itemTitle, i.imageUrl as itemImageUrl
+      FROM transactions t
+      JOIN items i ON t.itemId = i.id
+      WHERE t.sellerAddress = ? OR t.buyerAddress = ?
+      ORDER BY t.createdAt DESC
+    `).all(address, address);
+    res.json(transactions);
+  });
+
+  app.post("/api/transactions", (req, res) => {
+    const { itemId, buyerAddress, sellerAddress, price } = req.body;
+    try {
+      const info = db.prepare(`
+        INSERT INTO transactions (itemId, buyerAddress, sellerAddress, price)
+        VALUES (?, ?, ?, ?)
+      `).run(itemId, buyerAddress, sellerAddress, price);
+      res.json({ id: info.lastInsertRowid });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/transactions/:id/rate", (req, res) => {
+    const { id } = req.params;
+    const { rating, comment, buyerAddress } = req.body;
+    
+    const tx = db.prepare("SELECT buyerAddress FROM transactions WHERE id = ?").get(id) as { buyerAddress: string } | undefined;
+    if (!tx) return res.status(404).json({ error: "Transaction not found" });
+    if (tx.buyerAddress.toLowerCase() !== buyerAddress.toLowerCase()) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    db.prepare("UPDATE transactions SET rating = ?, comment = ? WHERE id = ?").run(rating, comment, id);
+    res.json({ success: true });
   });
 
   // Vite middleware for development

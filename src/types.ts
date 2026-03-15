@@ -28,3 +28,17 @@ export enum EscrowStatus {
   Refunded = 3,
   Disputed = 4
 }
+
+export interface Transaction {
+  id: number;
+  itemId: number;
+  buyerAddress: string;
+  sellerAddress: string;
+  price: string;
+  status: string;
+  rating?: number;
+  comment?: string;
+  createdAt: string;
+  itemTitle: string;
+  itemImageUrl: string;
+}

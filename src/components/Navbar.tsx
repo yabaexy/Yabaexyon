@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ShoppingBag, PlusCircle, User, Search, Wallet, LogIn } from 'lucide-react';
+import { ShoppingBag, PlusCircle, User, Search, Wallet } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface NavbarProps {
@@ -39,10 +39,10 @@ export const Navbar: React.FC<NavbarProps> = ({ account, onConnect }) => {
               Sell Item
             </Link>
             <Link 
-              to="/dashboard" 
-              className={`text-sm font-medium transition-colors ${location.pathname === '/dashboard' ? 'text-brand' : 'text-zinc-500 hover:text-zinc-900'}`}
+              to="/profile" 
+              className={`text-sm font-medium transition-colors ${location.pathname === '/profile' ? 'text-brand' : 'text-zinc-500 hover:text-zinc-900'}`}
             >
-              My Trades
+              Profile
             </Link>
           </div>
 
@@ -51,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({ account, onConnect }) => {
             {account ? (
               <div className="flex items-center gap-3">
                 <Link 
-                  to="/dashboard"
+                  to="/profile"
                   className="w-8 h-8 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex items-center justify-center hover:border-brand transition-colors"
                 >
                   <User className="w-4 h-4 text-zinc-500" />
@@ -65,13 +65,6 @@ export const Navbar: React.FC<NavbarProps> = ({ account, onConnect }) => {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Link
-                  to="/signin"
-                  className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 px-4 py-2 text-sm font-medium transition-all"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Sign In
-                </Link>
                 <button
                   onClick={onConnect}
                   className="flex items-center gap-2 bg-brand hover:bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm"

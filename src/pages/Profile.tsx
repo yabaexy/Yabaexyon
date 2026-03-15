@@ -2,19 +2,19 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ethers } from 'ethers';
 import { ESCROW_CONTRACT_ADDRESS, ESCROW_ABI } from '../constants';
-import { Item, EscrowStatus } from '../types';
+import { Item, EscrowStatus, Transaction } from '../types';
 import { Package, ArrowRight, CheckCircle, RotateCcw, Settings, Edit2, X, Save, ShoppingBag, PlusCircle, ExternalLink, Calendar, Star, Coins } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ItemCard } from '../components/ItemCard';
 import { motion } from 'motion/react';
 import { WYDA_TOKEN_ADDRESS, WYDA_ABI } from '../constants';
 
-interface DashboardProps {
+interface ProfileProps {
   account: string | null;
   provider: ethers.BrowserProvider | null;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
+export const Profile: React.FC<ProfileProps> = ({ account, provider }) => {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ username: '', bio: '', avatarUrl: '' });
@@ -53,6 +53,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
     queryFn: () => fetch(`/api/users/${account}/items`).then(res => res.json()),
     enabled: !!account,
   });
+
+  const { data: transactions, isLoading: txLoading } = useQuery<Transaction[]>({
+    queryKey: ['my-transactions', account],
+    queryFn: () => fetch(`/api/users/${account}/transactions`).then(res => res.json()),
+    enabled: !!account,
+  });
+
+  const handleRate = async (txId: number, rating: number, comment: string) => {
+    try {
+      const res = await fetch(`/api/transactions/${txId}/rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating, comment, buyerAddress: account })
+      });
+      if (res.ok) {
+        queryClient.invalidateQueries({ queryKey: ['my-transactions', account] });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const filteredItems = myItems?.filter(item => {
     const matchesCategory = filters.category === 'All' || item.category === filters.category;
@@ -96,14 +117,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
     <div className="max-w-7xl mx-auto px-4 py-12">
       <header className="mb-12 flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-zinc-900">My Trades</h1>
+          <h1 className="text-3xl font-bold text-zinc-900">Profile</h1>
           <p className="text-zinc-500">Manage your profile and active trades.</p>
         </div>
       </header>
 
       {!account ? (
         <div className="glass-card rounded-3xl p-12 text-center">
-          <p className="text-zinc-500 mb-4">Please connect your wallet to view your dashboard.</p>
+          <p className="text-zinc-500 mb-4">Please connect your wallet to view your profile.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
@@ -340,24 +361,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
                   Purchases
                 </h2>
                 <div className="space-y-4">
-                  <div className="glass-card rounded-2xl p-6 border-l-4 border-l-brand">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="font-bold text-zinc-900">Vintage Film Camera</h3>
-                        <p className="text-xs text-zinc-500 mt-1">Seller: 0x1234...5678</p>
+                  {txLoading ? (
+                    <div className="h-24 bg-zinc-100 rounded-2xl animate-pulse" />
+                  ) : transactions?.filter(t => t.buyerAddress.toLowerCase() === account?.toLowerCase()).length ? (
+                    transactions.filter(t => t.buyerAddress.toLowerCase() === account?.toLowerCase()).map(tx => (
+                      <div key={tx.id} className="glass-card rounded-2xl p-6 border-l-4 border-l-brand">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="font-bold text-zinc-900">{tx.itemTitle}</h3>
+                            <p className="text-xs text-zinc-500 mt-1">Seller: {tx.sellerAddress.slice(0, 6)}...{tx.sellerAddress.slice(-4)}</p>
+                          </div>
+                          <span className="px-2 py-1 bg-brand/10 text-brand text-[10px] font-bold rounded uppercase">
+                            {tx.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-lg font-bold">{tx.price} WYDA</div>
+                          {!tx.rating ? (
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <button 
+                                  key={star}
+                                  onClick={() => handleRate(tx.id, star, "Great trade!")}
+                                  className="text-zinc-200 hover:text-brand transition-colors"
+                                >
+                                  <Star className="w-4 h-4" />
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star key={i} className={`w-3 h-3 ${i < tx.rating! ? 'text-brand fill-brand' : 'text-zinc-200'}`} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <span className="px-2 py-1 bg-brand/10 text-brand text-[10px] font-bold rounded uppercase">
-                        Locked in Escrow
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-lg font-bold">450 WYDA</div>
-                      <button className="px-4 py-2 bg-zinc-900 text-white text-sm font-bold rounded-lg hover:bg-black transition-all">
-                        Confirm Receipt
-                      </button>
-                    </div>
-                  </div>
-                  <p className="text-center text-xs text-zinc-400 py-8">No other active purchases.</p>
+                    ))
+                  ) : (
+                    <p className="text-center text-xs text-zinc-400 py-8">No active purchases.</p>
+                  )}
                 </div>
               </section>
 
@@ -367,25 +411,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
                   Sales
                 </h2>
                 <div className="space-y-4">
-                  <div className="glass-card rounded-2xl p-6 border-l-4 border-l-emerald-500">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="font-bold text-zinc-900">Mechanical Keyboard</h3>
-                        <p className="text-xs text-zinc-500 mt-1">Buyer: 0xabcd...efgh</p>
+                  {txLoading ? (
+                    <div className="h-24 bg-zinc-100 rounded-2xl animate-pulse" />
+                  ) : transactions?.filter(t => t.sellerAddress.toLowerCase() === account?.toLowerCase()).length ? (
+                    transactions.filter(t => t.sellerAddress.toLowerCase() === account?.toLowerCase()).map(tx => (
+                      <div key={tx.id} className="glass-card rounded-2xl p-6 border-l-4 border-l-emerald-500">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="font-bold text-zinc-900">{tx.itemTitle}</h3>
+                            <p className="text-xs text-zinc-500 mt-1">Buyer: {tx.buyerAddress.slice(0, 6)}...{tx.buyerAddress.slice(-4)}</p>
+                          </div>
+                          <span className="px-2 py-1 bg-emerald-100 text-emerald-600 text-[10px] font-bold rounded uppercase">
+                            {tx.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-lg font-bold">{tx.price} WYDA</div>
+                          {tx.rating ? (
+                            <div className="flex items-center gap-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star key={i} className={`w-3 h-3 ${i < tx.rating! ? 'text-brand fill-brand' : 'text-zinc-200'}`} />
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-zinc-400 italic">No rating yet</span>
+                          )}
+                        </div>
                       </div>
-                      <span className="px-2 py-1 bg-emerald-100 text-emerald-600 text-[10px] font-bold rounded uppercase">
-                        Completed
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-lg font-bold">120 WYDA</div>
-                      <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" />
-                        Funds Released
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-center text-xs text-zinc-400 py-8">No other active sales.</p>
+                    ))
+                  ) : (
+                    <p className="text-center text-xs text-zinc-400 py-8">No active sales.</p>
+                  )}
                 </div>
               </section>
             </div>

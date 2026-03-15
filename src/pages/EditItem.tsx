@@ -60,7 +60,7 @@ export const EditItem: React.FC = () => {
           });
         } else {
           alert("Item not found");
-          navigate('/dashboard');
+          navigate('/profile');
         }
       } catch (err) {
         console.error(err);
