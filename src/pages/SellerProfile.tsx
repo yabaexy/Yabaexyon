@@ -1,5 +1,5 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Item, User } from '../types';
 import { ItemCard } from '../components/ItemCard';
@@ -10,7 +10,14 @@ import { useWallet } from '../hooks/useWallet';
 export const SellerProfile: React.FC = () => {
   const { address } = useParams();
   const { account } = useWallet();
+  const navigate = useNavigate();
   const isOwner = account?.toLowerCase() === address?.toLowerCase();
+
+  useEffect(() => {
+    if (isOwner) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isOwner, navigate]);
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ['user', address],

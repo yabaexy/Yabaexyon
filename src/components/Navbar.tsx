@@ -51,10 +51,10 @@ export const Navbar: React.FC<NavbarProps> = ({ account, onConnect }) => {
             {account ? (
               <div className="flex items-center gap-3">
                 <Link 
-                  to={`/seller/${account}`}
+                  to="/dashboard"
                   className="w-8 h-8 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex items-center justify-center hover:border-brand transition-colors"
                 >
-                  <User className="w-4 h-4 text-zinc-50" />
+                  <User className="w-4 h-4 text-zinc-500" />
                 </Link>
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-zinc-100 rounded-full border border-zinc-200">
                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />

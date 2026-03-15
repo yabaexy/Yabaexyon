@@ -96,18 +96,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ account, provider }) => {
     <div className="max-w-7xl mx-auto px-4 py-12">
       <header className="mb-12 flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-zinc-900">My Dashboard</h1>
+          <h1 className="text-3xl font-bold text-zinc-900">My Trades</h1>
           <p className="text-zinc-500">Manage your profile and active trades.</p>
         </div>
-        {account && user && (
-          <Link 
-            to={`/seller/${account}`}
-            className="flex items-center gap-2 px-4 py-2 bg-brand/10 text-brand hover:bg-brand/20 rounded-xl font-bold transition-all"
-          >
-            <ExternalLink className="w-4 h-4" />
-            View Public Profile
-          </Link>
-        )}
       </header>
 
       {!account ? (
